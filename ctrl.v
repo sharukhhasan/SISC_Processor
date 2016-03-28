@@ -1,5 +1,6 @@
 // ECE:3350 SISC computer project
 // finite state machine
+// Sharukh Hasan & Mark Parise
 
 `timescale 1ns/100ps
 
