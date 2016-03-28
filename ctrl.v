@@ -63,8 +63,33 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel);
     
   /* TODO: Generate outputs based on the FSM states and inputs. For Parts 2 and 3, you will
        add the new control signals here. */
-
+always @(posedge clk)
+  begin
+    if (opcode == noop)
+	begin
+	  rf_we <= 1'b0;
+      alu_op <= 2'b00;
+      rd_sel <= 1'b0;
+      wb_sel <= 1'b0;
+    end
   // fetch
+  if(present_state == fetch)
+  begin
+	if(OPCODE==alu_op)
+	begin
+	  RF_WE<=0;
+      WB_SEL <=0;
+	  ALU_OP <=0;
+	  if(MM == 4'b1000)
+	  begin
+		RD_SEL<=1;
+      end
+	  else 
+	  begin
+	    RD_SEL<=0;
+	  end
+	end
+  end
     
   // decode
 
@@ -73,5 +98,5 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel);
   // mem
     
   // write back
-
+  end
 endmodule
