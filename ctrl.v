@@ -27,14 +27,16 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel);
        positive edge of the clock, OR resets the state to 'start0' on the negative edge
        of rst_f. Notice that the computer is reset when rst_f is low, not high. */
   always @(posedge clk or negedge rst_f)
-  begin
-  	if (!rst_f) begin
-  	  present_state <= start0;
-    end
-    else begin
-	  present_state <= next_state;
-    end
-  end
+  	begin
+  	 if (!rst_f) 
+  		begin
+  	  		present_state <= start0;
+    	end
+    else 
+    	begin
+	  		present_state <= next_state;
+    	end
+  	end
 
 
   /* TODO: Write a process that determines the next state of the fsm. */
@@ -66,37 +68,61 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel);
 always @(posedge clk)
   begin
     if (opcode == noop)
-	begin
-	  rf_we <= 1'b0;
-      alu_op <= 2'b00;
-      rd_sel <= 1'b0;
-      wb_sel <= 1'b0;
-    end
-  // fetch
-  if(present_state == fetch)
-  begin
-	if(OPCODE==alu_op)
-	begin
-	  RF_WE<=0;
-      WB_SEL <=0;
-	  ALU_OP <=0;
-	  if(MM == 4'b1000)
-	  begin
-		RD_SEL<=1;
+	  	begin
+	    	rf_we <= 1'b0;
+        alu_op <= 2'b00;
+        rd_sel <= 1'b0;
+        wb_sel <= 1'b0;
       end
-	  else 
-	  begin
-	    RD_SEL<=0;
-	  end
-	end
-  end
+  // fetch
+  	if(present_state == fetch)
+  		begin
+  			$display("in fetch");
+	    	if(opcode == alu_op)
+	      	begin
+	        	rf_we <= 0;
+            wb_sel <= 0;
+	        	alu_op <= 0;
+	    	if(mm == 4'b1000)
+	      	begin
+		    		rd_sel <= 1;
+          end
+	    	else 
+	      	begin
+	        	rd_sel <= 0;
+	    		end
+	  		end
+    	end
     
   // decode
+    else if(present_state == decode)
+    	begin
+    		$display("in decode");
+  	    if(opcode == alu_op)
+  	    	begin
+  	    		rf_we <= 0;
+      		end
+      end
 
   // execute
-    
+    else if(present_state == execute)
+    	begin
+    		$display("in execute");
+  
+    	end	
   // mem
-    
+    else if(present_state == mem)
+    	begin
+    		$display("in mem");
+  	
+      end
   // write back
+    else if(present_state == writeback)
+    	begin
+    		$display("in writeback");
+  	
+      end
+  
+  
   end
 endmodule
