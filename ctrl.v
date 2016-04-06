@@ -109,13 +109,26 @@ always @(posedge clk)
     else if(present_state == execute)
     	begin
     		$display("in execute");
-  
+    		if(opcode == alu_op)
+    			begin
+    				if(mm == 4'b1000)
+    					begin
+    						alu_op <= 2'b01;
+    					end
+    				else
+    					begin
+    						alu_op <= 2'b00;
+    					end
+    			end
     	end	
   // mem
     else if(present_state == mem)
     	begin
     		$display("in mem");
-  	
+    		if(op_code == alu_op)
+    			begin
+    				rf_we <= 1;
+    			end
       end
   // write back
     else if(present_state == writeback)
