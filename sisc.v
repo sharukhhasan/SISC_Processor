@@ -31,46 +31,52 @@ module sisc (clk, rst_f, ir);
 	
 	// mux4
 	mux4 _mux4(.in_a	(ir[15:12]),
-						 .in_b	(ir[19:16]),
-						 .sel		(rd_sel),
-						 .out		(mux4_result));
+				.in_b	(ir[19:16]),
+				.sel	(rd_sel),
+				.out	(mux4_result));
 	
 	// rf
 	rf _rf(.read_rega	(ir[23:20]),
-				 .read_regb	(ir[19:16]),
-				 .write_reg	(mux4_result[3:0]),
-				 .write_data (mux32_out[31:0]),
-				 .rf_we	(rf_we),
-				 .rsa	(rsa),
-				 .rsb	(rsb));
+				 .read_regb    (ir[19:16]),
+				 .write_reg    (mux4_result[3:0]),
+				 .write_data   (mux32_out[31:0]),
+				 .rf_we	       (rf_we),
+				 .rsa	       (rsa),
+				 .rsb	       (rsb),
+				 .clk	(clk));
 	
 	// alu
 	alu _alu(.rsa	(rsa[31:0]),
-				   .rsb	(rsb[31:0]),
-				   .alu_op	(alu_op[1:0]),
-				   .alu_result	(alu_result),
-				   .stat	(cc),
-				   .stat_en	(cc_en));
+			.rsb	(rsb[31:0]),
+			.alu_op	(alu_op[1:0]),
+			.alu_result	(alu_result),
+			.stat	(cc),
+			.stat_en	(cc_en),
+			.clk	(clk),
+			.imm (ir[15:0]));
 	
 	// mux32
 	mux32 _mux32(.in_a	(32'h00000000),
-						   .in_b	(alu_result[31:0]),
-						   .sel		(wb_sel),
-						   .out		(mux32_out));
+		     .in_b	(alu_result[31:0]),
+		     .sel	(wb_sel),
+		     .out	(mux32_out));
 	
 	// statreg
-	statreg _statreg(.in	(cc[3:0]),
-								   .enable	(cc_en),
-								   .out	(stat_out));
+	statreg _statreg(.in	   (cc[3:0]),
+			 .enable   (cc_en),
+			 .out	   (stat_out),
+			 .clk	(clk));
 	
 	// ctrl
 	ctrl _ctrl(.clk	(clk),
-						 .rst_f	(rst_f),
-						 .opcode	(ir[31:28]),
-						 .mm	(ir[27:24]),
-						 .stat	(stat_out)
-						// outputs left to do
-	);
+		   .rst_f	(rst_f),
+		   .opcode	(ir[31:28]),
+		   .mm	        (ir[27:24]),
+		   .stat	(stat_out),
+		   .rf_we (rf_we),
+		   .alu_op	(alu_op[1:0]),
+		   .wb_sel	(wb_sel),
+		   .rd_sel (rd_sel));
 	
 	
 endmodule
