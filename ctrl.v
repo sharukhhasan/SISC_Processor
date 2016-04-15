@@ -4,12 +4,12 @@
 
 `timescale 1ns/100ps
 
-module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel);
+module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel, br_sel, pc_rst, pc_write, pc_sel, ir_load);
   
   /* TODO: Declare the ports listed above as inputs or outputs */
   input clk, rst_f;
   input [3:0] opcode, mm, stat;
-  output reg rf_we, wb_sel, rd_sel;
+  output reg rf_we, wb_sel, rd_sel, br_sel, pc_rst, pc_write, pc_sel, ir_load;
   output reg [1:0] alu_op;
   
   // states
@@ -31,10 +31,12 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel);
   	begin
   	 if (!rst_f) 
   		begin
+  			  pc_rst <= 1;
   	  		present_state <= start0;
     	end
     else 
     	begin
+    		pc_rst <= 0;
 	  		present_state <= next_state;
     	end
   	end
