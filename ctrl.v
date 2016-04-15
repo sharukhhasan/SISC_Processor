@@ -23,6 +23,12 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel, br_sel
 
   // state registers
   reg [2:0]  present_state, next_state;
+  
+  initial
+  	begin
+  		pc_rst <= 1;
+  		pc_write <= 1;
+  	end
 
   /* TODO: Write a clock process that progresses the fsm to the next state on the
        positive edge of the clock, OR resets the state to 'start0' on the negative edge
@@ -76,31 +82,37 @@ always @(posedge clk)
         alu_op <= 2'b00;
         rd_sel <= 1'b0;
         wb_sel <= 1'b0;
+        
+        br_sel <= 0;
+        pc_rst <= 0;
+        pc_sel <= 0;
       end
   // fetch
   	if(present_state == fetch)
   		begin
-  			$display("in fetch");
+  			pc_rst <= 0;
+    		pc_sel <= 0;
+    		pc_write <= 1;
+    		
 	    	if(opcode == alu_op)
 	      	begin
 	        	rf_we <= 0;
             wb_sel <= 0;
 	        	alu_op <= 0;
-	    	if(mm == 4'b1000)
-	      	begin
-		    		rd_sel <= 1;
-          end
-	    	else 
-	      	begin
-	        	rd_sel <= 0;
-	    		end
-	  		end
-    	end
-    
+	        	
+	        	br_sel <= 0;
+	        	pc_sel <= 0;
+	        end
+	    	if((OPCODE == brr) || (OPCODE == bra) || (OPCODE == bne))
+		 	  	begin
+		 	  		WB_SEL <= 0;
+		  			RF_WE <= 0;
+						ALU_OP <= 2'b10;
+					end
+    end
   // decode
     else if(present_state == decode)
     	begin
-    		$display("in decode");
   	    if(opcode == alu_op)
   	    	begin
   	    		rf_we <= 0;
@@ -109,8 +121,7 @@ always @(posedge clk)
 
   // execute
     else if(present_state == execute)
-    	begin
-    		$display("in execute");
+    	begin	
     		if(opcode == alu_op)
     			begin
     				if(mm == 4'b1000)
@@ -126,7 +137,6 @@ always @(posedge clk)
   // mem
     else if(present_state == mem)
     	begin
-    		$display("in mem");
     		if(op_code == alu_op)
     			begin
     				rf_we <= 1;
@@ -135,7 +145,6 @@ always @(posedge clk)
   // write back
     else if(present_state == writeback)
     	begin
-    		$display("in writeback");
   	
       end
   
