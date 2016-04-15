@@ -64,7 +64,7 @@ module alu (clk, rsa, rsb, imm, alu_op, alu_result, stat, stat_en);
   reg  [31:0] imm_ext;
   reg  [31:0] alu_result;
   wire [3:0]  funct;
-  wire        stat_en;
+  wire        stat_en, fsb;
   reg t;
   integer i;
 
@@ -99,7 +99,7 @@ module alu (clk, rsa, rsb, imm, alu_op, alu_result, stat, stat_en);
   always @ (rsa, rsb, funct)
     case (funct[1:0])
       2'b00:    log_out <= ~rsa;
-      2'b01:     log_out <= rsa | rsb;
+      2'b01:    log_out <= rsa | rsb;
       2'b10:    log_out <= rsa & rsb;
       2'b11:    log_out <= rsa ^ rsb;
     endcase
@@ -155,10 +155,13 @@ module alu (clk, rsa, rsb, imm, alu_op, alu_result, stat, stat_en);
   // status code generation 
   // 3 = Carry; 2 = oVerflow; 1 = Negative; 0 = Zero
   // Assume signed operands
-  assign stat[3] = (add_out[32] == 1'b1) ? 1'b1 : 1'b0;
-  assign stat[2] = (!(rsa[31] ^ rsb[31] ^ sub) && (rsb[31] ^ add_out[31]));
-  assign stat[1] = ((!(rsa[31] ^ rsb[31] ^ sub) && (rsb[31] ^ add_out[31])) ^ (add_out[31] == 1'b1))  ? 1'b1 : 1'b0;
-  assign stat[0] = (add_out[31:0] == 32'H00000000) ? 1'b1 : 1'b0;
+
+  assign fsb = (funct == sub) ? 1'b1 : 1'b0;
+
+  assign stat[3] = add_out[32];
+  assign stat[2] = (~(fsb ^ rsa[31] ^ rsb[31])) & (fsb ^ rsb[31] ^ add_out[31]);
+  assign stat[1] = alu_out[31];
+  assign stat[0] = ~|alu_out[31:0];
 
   // status register enable
   assign stat_en = ((funct == add) || (funct == sub)) && (alu_op[1] == 1'b0) ? 1'b1 : 1'b0;
