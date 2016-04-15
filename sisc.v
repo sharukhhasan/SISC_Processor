@@ -4,8 +4,7 @@
 
 `timescale 1ns/100ps
 
-module sisc (clk, rst_f, ir);
-	//input [31:0] ir;
+module sisc (clk, rst_f);
 	input clk, rst_f;
 	
 	// datapath
@@ -34,6 +33,7 @@ module sisc (clk, rst_f, ir);
 	wire pc_rst;
 	wire pc_write;
 	wire pc_sel;
+	wire ir_load;
 	
 	
 	
@@ -106,9 +106,12 @@ module sisc (clk, rst_f, ir);
 	br _br(.pc_inc (pc_inc[15:0]),
 				 .imm (IR[15:0]),
 				 .br_sel (br_sel),
-				 .br_addr (branch_address[15:0]));
+				 .br_addr (branch_address));
 				 
-  ir _ir();
+  ir _ir(.clk (clk),
+  	     .ir_load (ir_load),
+  	     .read_data (IR[31:0]),
+  	     .instr	(IR[31:0]));
 	
 	
 endmodule
