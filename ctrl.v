@@ -76,17 +76,17 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel, br_sel
        add the new control signals here. */
 always @(posedge clk)
   begin
-    if (opcode == noop)
-	  	begin
+    if (opcode == NOOP)
+        begin
 	    	rf_we <= 1'b0;
-        alu_op <= 2'b00;
-        rd_sel <= 1'b0;
-        wb_sel <= 1'b0;
+            alu_op <= 2'b00;
+            rd_sel <= 1'b0;
+            wb_sel <= 1'b0;
         
-        br_sel <= 0;
-        pc_rst <= 0;
-        pc_sel <= 0;
-      end
+            br_sel <= 0;
+            pc_rst <= 0;
+            pc_sel <= 0;
+        end
   // fetch
   	if(present_state == fetch)
   		begin
@@ -103,7 +103,7 @@ always @(posedge clk)
 	        	br_sel <= 0;
 	        	pc_sel <= 0;
 	        end
-	    	if((OPCODE == brr) || (OPCODE == bra) || (OPCODE == bne))
+	    	if((opcode == BRR) || (opcode == BRA) || (opcode == BNE))
 		 	  	begin
 		 	  		WB_SEL <= 0;
 		  			RF_WE <= 0;
@@ -116,6 +116,7 @@ always @(posedge clk)
   	    if(opcode == alu_op)
   	    	begin
   	    		rf_we <= 0;
+  	    		pc_write <= 0;
       		end
       end
 
