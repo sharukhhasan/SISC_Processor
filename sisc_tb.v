@@ -7,24 +7,40 @@
 module sisc_tb;
 	wire clk;
 	wire rst_f;
-	wire [31:0] ir;
+	//wire [31:0] ir;
 	
-	sisc(clk, rst_f, ir);
+	sisc mysisc(clk, rst_f);
+	sisc_test mytestsisc(clk, rst_f);
 	
 endmodule
 
-module sisc_test(CLK, RST_F, IR);
-	output CLK, RST_F;
-	output[31:0] IR;
-	reg CLK, RST_F;
-	reg[31:0] IR;
+module sisc_test(clk, rst_f);
+	output clk, rst_f;
+	//output[31:0] IR;
+	reg clk, rst_f;
+	//reg[31:0] IR;
+
+	initial
+		begin
+			clk = 0;
+			rst_f = 1;
+		end
 
 	always       //drive clock, 10ns clock cycle -> 5ns on, 5ns off
 		begin
 			#5 CLK <= !CLK;
 		end
-
-	initial begin
+		
+	initial
+		begin
+			RST_F <= 0;
+			#20
+			RST_F <= 1;
+		end
+		
+	
+	// part 1
+	/*initial begin
 		CLK<=0; RST_F<=1;
 		#20 RST_F <=0;
 		#5  IR <=32'H00000000; RST_F<=1; //1st instruction nop
@@ -42,5 +58,5 @@ module sisc_test(CLK, RST_F, IR);
 		#50 IR <=32'H8032100B;  // shift left by r[2]=1 from r[3] and store in r[1]
 		#50 IR <=32'HF0000000;  //halt
 		#50 $finish;
-	end
+	end*/
 endmodule
