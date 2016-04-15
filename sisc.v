@@ -5,7 +5,7 @@
 `timescale 1ns/100ps
 
 module sisc (clk, rst_f, ir);
-	input [31:0] ir;
+	//input [31:0] ir;
 	input clk, rst_f;
 	
 	// datapath
@@ -26,6 +26,14 @@ module sisc (clk, rst_f, ir);
 	wire cc_en;
 	wire [1:0] log_ctl;
 	wire shf_ctl;
+	wire [15:0] pc_out;		// part 2
+	wire [15:0] pc_inc;
+	wire [15:0] branch_address;
+	wire [31:0] IR;
+	wire pc_write;
+	wire pc_sel;
+	wire pc_rst;
+	wire br_sel;
 	
 	// components
 	
@@ -42,8 +50,7 @@ module sisc (clk, rst_f, ir);
 				 .write_data   (mux32_out[31:0]),
 				 .rf_we	       (rf_we),
 				 .rsa	       (rsa),
-				 .rsb	       (rsb),
-				 .clk	(clk));
+				 .rsb	       (rsb));
 	
 	// alu
 	alu _alu(.rsa	(rsa[31:0]),
@@ -52,7 +59,6 @@ module sisc (clk, rst_f, ir);
 			.alu_result	(alu_result),
 			.stat	(cc),
 			.stat_en	(cc_en),
-			.clk	(clk),
 			.imm (ir[15:0]));
 	
 	// mux32
@@ -64,8 +70,7 @@ module sisc (clk, rst_f, ir);
 	// statreg
 	statreg _statreg(.in	   (cc[3:0]),
 			 .enable   (cc_en),
-			 .out	   (stat_out),
-			 .clk	(clk));
+			 .out	   (stat_out));
 	
 	// ctrl
 	ctrl _ctrl(.clk	(clk),
@@ -76,7 +81,11 @@ module sisc (clk, rst_f, ir);
 		   .rf_we (rf_we),
 		   .alu_op	(alu_op[1:0]),
 		   .wb_sel	(wb_sel),
-		   .rd_sel (rd_sel));
+		   .rd_sel (rd_sel),
+		   .br_sel (br_sel),
+		   .pc_rst (pc_rst),
+		   .pc_write (pc_write),
+		   .pc_sel (pc_sel));
 	
 	
 endmodule
