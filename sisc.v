@@ -52,7 +52,8 @@ module sisc (clk, rst_f, ir);
 				 .write_data   (mux32_out[31:0]),
 				 .rf_we	       (rf_we),
 				 .rsa	       (rsa),
-				 .rsb	       (rsb));
+				 .rsb	       (rsb),
+				 .clk				(clk));
 	
 	// alu
 	alu _alu(.rsa	(rsa[31:0]),
@@ -61,7 +62,8 @@ module sisc (clk, rst_f, ir);
 			.alu_result	(alu_result),
 			.stat	(cc),
 			.stat_en	(cc_en),
-			.imm (ir[15:0]));
+			.imm (ir[15:0]),
+			.clk (clk));
 	
 	// mux32
 	mux32 _mux32(.in_a	(32'h00000000),
@@ -72,7 +74,8 @@ module sisc (clk, rst_f, ir);
 	// statreg
 	statreg _statreg(.in	   (cc[3:0]),
 			 .enable   (cc_en),
-			 .out	   (stat_out));
+			 .out	   (stat_out),
+			 .clk (clk));
 	
 	// ctrl
 	ctrl _ctrl(.clk	(clk),
@@ -89,11 +92,23 @@ module sisc (clk, rst_f, ir);
 		   .pc_write (pc_write),
 		   .pc_sel (pc_sel));
 		   
-	pc _pc();
+	pc _pc(.clk (clk),
+				 .br_addr (branch_address[15:0]),
+				 .pc_sel (pc_sel),
+				 .pc_write (pc_write),
+				 .pc_rst (pc_rst),
+				 .pc_out (pc_out),
+				 .pc_inc (pc_inc));
 	
-	im _im();
+	im _im(.read_addr (read_addr[15:0]),
+				 .read_data (IR[31:0]));
 	
-	br _br();
+	br _br(.pc_inc (pc_inc[15:0]),
+				 .imm (IR[15:0]),
+				 .br_sel (br_sel),
+				 .br_addr (branch_address[15:0]));
+				 
+  ir _ir();
 	
 	
 endmodule
