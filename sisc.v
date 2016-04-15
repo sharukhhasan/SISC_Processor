@@ -26,14 +26,16 @@ module sisc (clk, rst_f, ir);
 	wire cc_en;
 	wire [1:0] log_ctl;
 	wire shf_ctl;
-	wire [15:0] pc_out;		// part 2
+	wire [31:0] IR;
+	wire [15:0] pc_out;		
 	wire [15:0] pc_inc;
 	wire [15:0] branch_address;
-	wire [31:0] IR;
+	wire br_sel;
+	wire pc_rst;
 	wire pc_write;
 	wire pc_sel;
-	wire pc_rst;
-	wire br_sel;
+	
+	
 	
 	// components
 	
@@ -86,6 +88,12 @@ module sisc (clk, rst_f, ir);
 		   .pc_rst (pc_rst),
 		   .pc_write (pc_write),
 		   .pc_sel (pc_sel));
+		   
+	pc _pc();
+	
+	im _im();
+	
+	br _br();
 	
 	
 endmodule
