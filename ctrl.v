@@ -31,12 +31,6 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel, br_sel
 
   // state registers
   reg [2:0]  present_state, next_state;
-  
-  //initial
-  	//begin
-  		//pc_rst <= 1;
-  		//pc_write <= 1;
-  	//end
 
   /* TODO: Write a clock process that progresses the fsm to the next state on the
        positive edge of the clock, OR resets the state to 'start0' on the negative edge
@@ -54,6 +48,14 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel, br_sel
 	  		present_state <= next_state;
     	end
   	end
+  	
+  always @ (rst_f)
+     begin 
+        if(rst_f == 0)
+	  			pc_rst <= 1;
+				else
+	  			pc_rst <= 0;
+     end	 
 
 
   /* TODO: Write a process that determines the next state of the fsm. */
@@ -84,43 +86,71 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel, br_sel
        add the new control signals here. */
 always@(present_state)
   case(present_state)
-  	start0: begin
-			$display("in start 0");
-			next_state <= start1;
-		end
-		
-		start1: begin
-			$display("in start1");
-   		RST_F <= 1;
-			//PC_RST <= 0;
-			next_state <= fetch;
-		end
-		
 		fetch: begin
 			$display("in fetch");
-			if(opcode == alu_op)
-		  	begin
-					rf_we <= 0;
-					wb_sel <= 0;
-					alu_op <= 0;
-				if(mm == 4'b1000)
-			  	begin
-						rd_sel <= 1;
-			  	end
-				else 
-			  	begin
-						rd_sel <= 0;
-			  	end
-				end
+			pc_write <= 1;
 		end
 		
 		decode: begin
 			$display("in decode");
 			rf_we <= 0;
+			pc_write <= 0;
 		end
 		
 		execute: begin
 			$display("in execute");
+      if (mm == 0) 
+      begin
+				alu_op <= 2'b00;
+      end
+      else if (mm == 8) 
+      begin
+				alu_op <= 2'b01;
+      end
+      
+      
+      if ((opcode == bra || opcode == brr || opcode == bne)) 
+      begin
+				if ((mm & stat) == mm ) 
+				begin
+					pc_sel <= 1;
+					pc_write <= 1;
+        end
+      end
+
+      if ((opcode == bra) || (opcode == bne)) 
+      begin
+        br_sel <= 1;
+        end
+      else
+      begin
+        br_sel <= 0;
+      end
+    end
+    
+    writeback: begin
+			$display("in writeback");
+      if (mm == 0 && opcode == alu_op) 
+      begin
+				rf_we <= 1;
+				wb_sel <= 0;
+				rd_sel <=1;
+			end
 			
+	  	if (mm == am_imm && opcode == alu_op) 
+	  	begin
+	  		rf_we <= 1;
+	  		wb_sel <= 0;
+        rd_sel <=1;
+			end
+	
+      if ((opcode == bra) || (opcode == bne)) 
+      begin 
+				pc_sel <= 1;
+			end
+      else
+				pc_sel <= 0;
+      end
+  endcase
 		
 endmodule
