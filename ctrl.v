@@ -4,12 +4,12 @@
 
 `timescale 1ns/100ps
 
-module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel, br_sel, pc_rst, pc_write, pc_sel, ir_load);
+module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel);//, rd_sel, br_sel, pc_rst, pc_write, pc_sel, ir_load);
   
   /* TODO: Declare the ports listed above as inputs or outputs */
   input clk, rst_f;
   input [3:0] opcode, mm, stat;
-  output reg rf_we, wb_sel, rd_sel, br_sel, pc_rst, pc_write, pc_sel, ir_load;
+  output reg rf_we, wb_sel, rd_sel;//, br_sel, pc_rst, pc_write, pc_sel, ir_load;
   output reg [1:0] alu_op;
   
   // states
@@ -24,11 +24,11 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel, br_sel
   // state registers
   reg [2:0]  present_state, next_state;
   
-  initial
-  	begin
-  		pc_rst <= 1;
-  		pc_write <= 1;
-  	end
+  //initial
+  	//begin
+  		//pc_rst <= 1;
+  		//pc_write <= 1;
+  	//end
 
   /* TODO: Write a clock process that progresses the fsm to the next state on the
        positive edge of the clock, OR resets the state to 'start0' on the negative edge
@@ -37,12 +37,12 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel, br_sel
   	begin
   	 if (!rst_f) 
   		begin
-  			  pc_rst <= 1;
+  			  //pc_rst <= 1;
   	  		present_state <= start0;
     	end
     else 
     	begin
-    		pc_rst <= 0;
+    		//pc_rst <= 0;
 	  		present_state <= next_state;
     	end
   	end
@@ -74,81 +74,45 @@ module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel, br_sel
     
   /* TODO: Generate outputs based on the FSM states and inputs. For Parts 2 and 3, you will
        add the new control signals here. */
-always @(posedge clk)
-  begin
-    if (opcode == NOOP)
-        begin
-	    	rf_we <= 1'b0;
-            alu_op <= 2'b00;
-            rd_sel <= 1'b0;
-            wb_sel <= 1'b0;
-        
-            br_sel <= 0;
-            pc_rst <= 0;
-            pc_sel <= 0;
-        end
-  // fetch
-  	if(present_state == fetch)
-  		begin
-  			pc_rst <= 0;
-    		pc_sel <= 0;
-    		pc_write <= 1;
-    		
-	    	if(opcode == alu_op)
-	      	begin
-	        	rf_we <= 0;
-            wb_sel <= 0;
-	        	alu_op <= 0;
-	        	
-	        	br_sel <= 0;
-	        	pc_sel <= 0;
-	        end
-	    	if((opcode == BRR) || (opcode == BRA) || (opcode == BNE))
-		 	  	begin
-		 	  		WB_SEL <= 0;
-		  			RF_WE <= 0;
-						ALU_OP <= 2'b10;
-					end
-    end
-  // decode
-    else if(present_state == decode)
-    	begin
-  	    if(opcode == alu_op)
-  	    	begin
-  	    		rf_we <= 0;
-  	    		pc_write <= 0;
-      		end
-      end
-
-  // execute
-    else if(present_state == execute)
-    	begin	
-    		if(opcode == alu_op)
-    			begin
-    				if(mm == 4'b1000)
-    					begin
-    						alu_op <= 2'b01;
-    					end
-    				else
-    					begin
-    						alu_op <= 2'b00;
-    					end
-    			end
-    	end	
-  // mem
-    else if(present_state == mem)
-    	begin
-    		if(op_code == alu_op)
-    			begin
-    				rf_we <= 1;
-    			end
-      end
-  // write back
-    else if(present_state == writeback)
-    	begin
-  	
-      end
-  
-  
-  end
+always@(present_state)
+  case(present_state)
+  	start0: begin
+			$display("in start 0");
+			next_state <= start1;
+		end
+		
+		start1: begin
+			$display("in start1");
+   		RST_F <= 1;
+			//PC_RST <= 0;
+			next_state <= fetch;
+		end
+		
+		fetch: begin
+			$display("in fetch");
+			if(opcode == alu_op)
+		  	begin
+					rf_we <= 0;
+					wb_sel <= 0;
+					alu_op <= 0;
+				if(mm == 4'b1000)
+			  	begin
+						rd_sel <= 1;
+			  	end
+				else 
+			  	begin
+						rd_sel <= 0;
+			  	end
+				end
+		end
+		
+		decode: begin
+			$display("in decode");
+			rf_we <= 0;
+		end
+		
+		execute: begin
+			$display("in execute");
+			
+		
 endmodule
