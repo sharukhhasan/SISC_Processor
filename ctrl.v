@@ -4,13 +4,21 @@
 
 `timescale 1ns/100ps
 
-module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel);//, rd_sel, br_sel, pc_rst, pc_write, pc_sel, ir_load);
+module ctrl (clk, rst_f, opcode, mm, stat, rf_we, alu_op, wb_sel, rd_sel, br_sel, pc_rst, pc_write, pc_sel, ir_load);
   
   /* TODO: Declare the ports listed above as inputs or outputs */
   input clk, rst_f;
   input [3:0] opcode, mm, stat;
-  output reg rf_we, wb_sel, rd_sel;//, br_sel, pc_rst, pc_write, pc_sel, ir_load;
-  output reg [1:0] alu_op;
+  
+  output rf_we, wb_sel, rd_sel;
+  reg rf_we, wb_sel, rd_sel;
+  
+  output [1:0] alu_op;
+  reg [1:0] alu_op;
+  
+  // part 2
+  output br_sel, pc_rst, pc_write, pc_sel, ir_load;
+  reg br_sel, pc_rst, pc_write, pc_sel, ir_load;
   
   // states
   parameter start0 = 0, start1 = 1, fetch = 2, decode = 3, execute = 4, mem = 5, writeback = 6;
