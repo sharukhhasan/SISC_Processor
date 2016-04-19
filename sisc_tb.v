@@ -13,8 +13,7 @@ module sisc_tb;
   // component instantiation
   // "uut" stands for "Unit Under Test"
   sisc uut (.clk   (clk),
-            .rst_f (rst_f),
-            .ir    (ir));
+            .rst_f (rst_f));
 
   // clock driver
   initial
@@ -38,8 +37,8 @@ module sisc_tb;
   end
 
 
-  initial
-  begin
+/*  initial
+    begin
     // To test all of the arithmetic instructions:
     #25 ir = 32'h00000000; //NOP
     #50 ir = 32'h88010001; //ADDI R1 <- R0 + (0x0000)0001
@@ -52,7 +51,7 @@ module sisc_tb;
     #50 ir = 32'h80214009; //ROTL R4 <- R2 <.< [R1]
     #50 ir = 32'h80245005; //OR   R5 <- R2 | R4
     #50 ir = 32'h80243006; //AND  R3 <- R2 & R4
-    #50 ir = 32'h00000000; //NOP
+    #50 ir = 32'h00000000; //NOP*/
 
 	/*
 	 * At this point, registers should be as follows:
@@ -60,7 +59,7 @@ module sisc_tb;
 	 *   R2: FF000008		R5: FF000019
 	 *   R3: FE000000		R0, R6-R15: 00000000
 	 */
-
+/* 
     // To test status code generation:
     #50 ir = 32'h00000000; //NOP
     #50 ir = 32'h88010001; //ADD  R1 <- R0 + (0x0000)0001 (STAT: 0000)
@@ -71,4 +70,5 @@ module sisc_tb;
     #50 ir = 32'hF0000000; //HALT
 
   end
+  */
 endmodule

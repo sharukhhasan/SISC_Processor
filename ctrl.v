@@ -108,7 +108,6 @@ always@(present_state)
 				alu_op <= 2'b01;
       end
       
-      
       if ((opcode == bra || opcode == brr || opcode == bne)) 
       begin
 				if ((mm & stat) == mm ) 
@@ -152,5 +151,10 @@ always@(present_state)
 				pc_sel <= 0;
       end
   endcase
+  
+  initial
+  	$monitor($time,,,"IR=%h",instr,,"PC=%h",pc_out,,"R1=%h",r.ram_array[1],,"R2=%h",r.ram_array[2],,
+	   	"R3=%h",r.ram_array[3],,"R4=%h",r.ram_array[4],,"R5=%h",r.ram_array[5],,"R6=%h",r.ram_array[6],,
+		"R7=%h",r.ram_array[7],,"R8=%h",r.ram_array[8],,);
 		
 endmodule
