@@ -12,7 +12,7 @@ module pc (clk, br_addr, pc_sel, pc_write, pc_rst, pc_out, pc_inc);
    *   - clk: System clock; positive edge active
    *   - br_addr (16 bits): The branch address computed by the br module.
    *   - pc_sel: This control bit tells the pc module whether to save the branch
-   *        address (pc_sel = 0) or PC+1 (pc_sel = 1) to the program counter.
+   *        address (pc_sel = 1) or PC+1 (pc_sel = 0) to the program counter.
    *   - pc_write: When this control bit changes to 1, the selected value (either
    *        the branch address or PC+1) is saved to pc_out and held there until
    *        the next time pc_en is set to 1.
