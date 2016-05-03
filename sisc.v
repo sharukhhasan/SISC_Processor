@@ -2,65 +2,164 @@
 // sisc.v
 // Sharukh Hasan & Mark Parise
 
-`timescale 1ns/100ps 
+`timescale 1ns/100ps
 
-module sisc(clk, rst_f);
+module sisc (clk, rst_f);
+  input clk, rst_f; 
+    
+  // Datapath and control signals
+	wire [3:0] mux4_result;
+	wire [31:0] wb_data;
+	wire [31:0] rsa;
+	wire [31:0] rsb;
+	wire rf_we;
+	wire imm_sel;
+	wire shf_ctl;
+	wire [1:0] log_ctl;
+	wire sub;
+	wire cc_en;
+	wire [3:0] cc;
+	wire [31:0] alu_result;
+	wire wb_sel;
+	wire [31:0] in_b;
+	wire [1:0] alu_op;
+	wire [3:0] stat_out;
+	wire [1:0] rd_sel; //changed for swap implementation
 
-input clk, rst_f;
-wire [31:0] IR;
-wire[3:0] opcode, mm;
-wire[3:0] rs, rt;
-wire[3:0] rd;
-wire[15:0] imm;
-//wire clk, rst_f;
+	//part 2 additions
+	wire [15:0] pc_out;
+	wire [15:0] pc_inc;
+	wire [15:0] branch_address;
+	wire [31:0] IR;
+	//part 2 control signals
+	wire pc_write;
+	wire pc_sel;
+	wire pc_rst;
+	wire br_sel;
 
-assign opcode = IR[31:28];
-assign mm = IR[27:24];
-assign rs = IR[23:20];
-assign rt = IR[19:16];
-assign rd = IR[15:12];
-assign imm = IR[15:0];
+	//part 3 additions
+	wire [15:0] mux16_result;
+	wire [31:0] memory_out;
+	wire mm_sel;
+	wire dm_we;
+	//swap additions
+	wire [31:0]data_swapped;//data coming out of swap reg into new mux
+	wire [31:0]swap_mux_data;//data coming out of swap mux into rf
+	wire [3:0]swap_reg; //swap register
+	wire swapmux;
+	wire swap_data_sel;
+	wire swap_reg_sel;
+	wire swap_en1;
 
-wire[3:0] statcode;
-wire rf_we;
-wire [1:0] alu_op;
-wire wb_sel;
-wire rd_sel;
-wire [3:0] write_reg;
-wire [31:0] write_data, read_data;
-wire [31:0] rsa, rsb;
-wire [31:0] alu_result, rs_data, rt_data, normal_data, final_result, rsort_data;
-wire [3:0] stat;
-wire stat_en;
-wire ir_load;
+  // Instantiate and connect all of the components
+	mux32	swapmuxer  (.in_a		 (data_swapped),
+        	 	.in_b		 (wb_data),
+			 .sel	       	 (swapmux),
+	        	 .out          (swap_mux_data));	
+	
+	swap_data sd(.a_input(rsa),
+			.b_input(rsb), 
+			.out_sel(swap_data_sel),
+			.swap_en (swap_en1), 
+			.data_out(data_swapped));	
+	
+	swap_reg sr(.a_input (IR[23:20]),
+			.b_input (IR[19:16]), 
+			.out_sel (swap_reg_sel), 
+			.data_out (swap_reg));	
+	
+	mux16 amux16( .in_a    	(alu_result[15:0]),
+			.in_b	(IR[15:0]),
+			.sel   	(mm_sel),
+			.out  (mux16_result));
 
-wire br_sel, pc_rst, pc_write, pc_sel, mm_sel, dm_we;
-wire [15:0] br_adder, pc_out, pc_inc, addr;
-wire data_sel, rs_en, rsort_sel;
+	dm memory(.read_addr (mux16_result), 
+		.write_addr (mux16_result), 
+		.write_data (rsb), 
+		.dm_we 	(dm_we), 
+		.read_data (memory_out));
 
-ctrl control(clk, rst_f, opcode, mm, statcode, rf_we, alu_op, wb_sel, rd_sel, br_sel, pc_rst, pc_write, pc_sel, mm_sel, dm_we, ir_load, rs_en, rsort_sel, data_sel);
+  mux4 amux4   (.in_a        (IR[15:12]),
+			        	.in_b        (IR[19:16]),
+					.in_swap	(swap_reg),//added after swap implementation
+								.sel	       (rd_sel),
+			        	.out         (mux4_result));
 
-im InstructionMem (pc_out , IR);
-pc ProgramCounter (clk, br_adder, pc_sel, pc_write, pc_rst, pc_out, pc_inc);
-br Branch (pc_inc, imm, br_sel, br_adder);
-dm Datamem (addr, addr, rsb, dm_we, read_data);
+	rf my_rf   (.clk				 (clk),
+							.read_rega   (IR[23:20]),
+		          .read_regb   (IR[19:16]),
+		          .write_reg   (mux4_result[3:0]),
+		          .write_data  (swap_mux_data[31:0]),//wb_data before swap implementation
+		          .rf_we       (rf_we),
+		          .rsa         (rsa),
+		          .rsb         (rsb));
 
-mux16 Datamux (alu_result[15:0], imm, mm_sel, addr);
-rf RF (clk, rs, rt, write_reg, final_result, rf_we, rsa, rsb);
-mux4 muxOnleft (rd, rt, rd_sel, write_reg);
-alu math (clk, rsa, rsb, imm, alu_op, alu_result, stat, stat_en);
-mux32 muxOnRight (read_data, alu_result, wb_sel, normal_data);
-statreg st (clk, stat, stat_en, statcode);
+	alu	my_alu (.clk				 (clk),
+							.rsa         (rsa[31:0]),
+			        .rsb         (rsb[31:0]),
+			        .imm	       (IR[15:0]),
+							.alu_op      (alu_op[1:0]),
+			        .alu_result  (alu_result),
+							.stat 	     (cc),
+							.stat_en 		 (cc_en));
+	
+	mux32	amux32  (.in_a				 (memory_out[31:0]),
+			        	 .in_b				 (alu_result[31:0]),
+								 .sel	       	 (wb_sel),
+			        	 .out          (wb_data));
 
-ir rtData(clk, ir_load, rsb, rt_data);
-ir rsData(clk, ir_load, rsa, rs_data);
-mux32 dataWriting(normal_data, rsort_data, data_sel, final_result);//
-mux32 rsort(rs_data, rt_data, rsort_sel, rsort_data);
+  statreg my_s  (.clk				  (clk),
+  							 .in          (cc[3:0]),
+								 .enable      (cc_en),
+  							 .out         (stat_out));
 
-initial
-begin
-/*$monitor($time,,,"IR: %h, R0: %h, R1: %h, R2: %h,  R3: %h,  R4: %h,  R5: %h, R6: %h, R12 : %h R13 : %h R14 : %h, R15 : %h",
-IR, RF.ram_array[0], RF.ram_array[1], RF.ram_array[2], RF.ram_array[3],RF.ram_array[4],RF.ram_array[5],RF.ram_array[6],RF.ram_array[12],RF.ram_array[13],RF.ram_array[14],RF.ram_array[15]);*/
-end
-
+	ctrl my_ctrl (.clk 	       (clk),
+			        	.rst_f       (rst_f),
+			        	.opcode      (IR[31:28]),
+			        	.mm          (IR[27:24]),
+			        	.stat        (stat_out),
+			        	.rf_we       (rf_we),
+			        	.alu_op		   (alu_op),
+			        	.WB_SEL      (wb_sel),
+			        	.RD_SEL			 (rd_sel),
+								.PC_SEL 		 (pc_sel),
+								.PC_WRITE 	 (pc_write),
+								.PC_RST 		 (pc_rst),
+								.BR_SEL 		 (br_sel),
+								.MM_SEL			(mm_sel),
+								.DM_WE			(dm_we),
+								.SWAP_MUX(swapmux), 
+								.SWAP_DATA(swap_data_sel), 
+								.SWAP_REG(swap_reg_sel),
+								.SWAP_EN(swap_en1));
+					
+	pc progcounter (.clk				(clk),
+									.br_addr 	 (branch_address[15:0]),
+								  .pc_sel 	 (pc_sel), 
+								  .pc_write  (pc_write), 
+								  .pc_rst 	 (pc_rst),
+									.pc_out		 (pc_out[15:0]),
+									.pc_inc		 (pc_inc[15:0]));
+					
+	im instr_mem (.read_addr 	(pc_out[15:0]),
+								.read_data 	(IR[31:0]));
+				
+	br branch(.pc_inc 	(pc_inc[15:0]), 
+						.imm 		  (IR[15:0]),
+						.br_sel 	(br_sel),
+						.br_addr 	(branch_address));
+                 
+  initial
+  begin			//all instructions monitor
+ /*   $monitor ($time,,," IR>: %h, PC=%h, R1=%h, R2=%h, R3=%h, R4=%h, RD_SEL=%b, RF_WE=%b, BR_SEL=%b, PC_SEL=%b, DM_WE = %b, MM_SEL = %b", IR, pc_out, my_rf.ram_array[1], my_rf.ram_array[2], my_rf.ram_array[3], my_rf.ram_array[4], rd_sel, rf_we, br_sel, pc_sel, dm_we, mm_sel); */
+		
+		// bubble sort monitor
+   $monitor ($time,, " IR>: %h, PC=%h, R1=%h, R2=%h, R3=%h, R4=%h, R5=%h, R10=%h, MEM1=%h, MEM2=%h, MEM3=%h, MEM4=%h, MEM5=%h, MEM6=%h", IR, pc_out, my_rf.ram_array[1], my_rf.ram_array[2], my_rf.ram_array[3], my_rf.ram_array[4], my_rf.ram_array[5], my_rf.ram_array[10], memory.ram_array[1],memory.ram_array[2],memory.ram_array[3],memory.ram_array[4],memory.ram_array[5],memory.ram_array[6]);
+	
+		//multiplication monitor
+	/*$monitor($time,,"IR>: %h, R1=%h, R2=%h, R3=%h, Data_swapped = %h swap_mux_data=%h, wb_data=%h, swap_reg=%h, RF_WE=%b write_reg=%h",IR, my_rf.ram_array[1], my_rf.ram_array[2], my_rf.ram_array[3], data_swapped, swap_mux_data, wb_data,swap_reg,rf_we,mux4_result,rd_sel);
+*/
+	//Add=%h, STAT=%b,PC_IN=%b
+	//branch_address,stat_out,progcounter.pc_in 
+  end 
 endmodule
