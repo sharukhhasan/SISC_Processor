@@ -2,116 +2,62 @@
 // sisc.v
 // Sharukh Hasan & Mark Parise
 
-`timescale 1ns/100ps
+module sisc(clk, rst_F);
 
-module sisc (clk, rst_f);
-	input clk, rst_f;
-	
-	// datapath
-	wire [31:0] rsa;
-	wire [31:0] rsb;
-	wire [31:0] mux32_out;
-	wire [31:0] alu_result;
-	wire [31:0] in_b;
-	wire [3:0] mux4_result;
-	wire [3:0] cc;
-	wire [3:0] stat_out;
-	wire [1:0] alu_op;
-	wire rf_we;
-	wire wb_sel;
-	wire rd_sel;
-	wire imm_sel;
-	wire sub;
-	wire cc_en;
-	wire [1:0] log_ctl;
-	wire shf_ctl;
-	wire [31:0] IR;
-	wire [15:0] pc_out;		
-	wire [15:0] pc_inc;
-	wire [15:0] branch_address;
-	wire br_sel;
-	wire pc_rst;
-	wire pc_write;
-	wire pc_sel;
-	wire ir_load;
-	
-	
-	
-	// components
-	
-	// mux4
-	mux4 _mux4(.in_a	(ir[15:12]),
-				.in_b	(ir[19:16]),
-				.sel	(rd_sel),
-				.out	(mux4_result));
-	
-	// rf
-	rf _rf(.read_rega	(ir[23:20]),
-				 .read_regb    (ir[19:16]),
-				 .write_reg    (mux4_result[3:0]),
-				 .write_data   (mux32_out[31:0]),
-				 .rf_we	       (rf_we),
-				 .rsa	       (rsa),
-				 .rsb	       (rsb),
-				 .clk				(clk));
-	
-	// alu
-	alu _alu(.rsa	(rsa[31:0]),
-			.rsb	(rsb[31:0]),
-			.alu_op	(alu_op[1:0]),
-			.alu_result	(alu_result),
-			.stat	(cc),
-			.stat_en	(cc_en),
-			.imm (ir[15:0]),
-			.clk (clk));
-	
-	// mux32
-	mux32 _mux32(.in_a	(32'h00000000),
-		     .in_b	(alu_result[31:0]),
-		     .sel	(wb_sel),
-		     .out	(mux32_out));
-	
-	// statreg
-	statreg _statreg(.in	   (cc[3:0]),
-			 .enable   (cc_en),
-			 .out	   (stat_out),
-			 .clk (clk));
-	
-	// ctrl
-	ctrl _ctrl(.clk	(clk),
-		   .rst_f	(rst_f),
-		   .opcode	(ir[31:28]),
-		   .mm	        (ir[27:24]),
-		   .stat	(stat_out),
-		   .rf_we (rf_we),
-		   .alu_op	(alu_op[1:0]),
-		   .wb_sel	(wb_sel),
-		   .rd_sel (rd_sel),
-		   .br_sel (br_sel),
-		   .pc_rst (pc_rst),
-		   .pc_write (pc_write),
-		   .pc_sel (pc_sel));
-		   
-	pc _pc(.clk (clk),
-				 .br_addr (branch_address[15:0]),
-				 .pc_sel (pc_sel),
-				 .pc_write (pc_write),
-				 .pc_rst (pc_rst),
-				 .pc_out (pc_out),
-				 .pc_inc (pc_inc));
-	
-	im _im(.read_addr (read_addr[15:0]),
-				 .read_data (IR[31:0]));
-	
-	br _br(.pc_inc (pc_inc[15:0]),
-				 .imm (IR[15:0]),
-				 .br_sel (br_sel),
-				 .br_addr (branch_address));
-				 
-  ir _ir(.clk (clk),
-  	     .ir_load (ir_load),
-  	     .read_data (IR[31:0]),
-  	     .instr	(IR[31:0]));
-	
-	
+input clk, rst_f;
+wire [31:0] IR;
+wire[3:0] opcode, mm;
+wire[3:0] rs, rt;
+wire[3:0] rd;
+wire[15:0] imm;
+wire clk, rst_f;
+
+assign opcode = IR[31:28];
+assign mm = IR[27:24];
+assign rs = IR[23:20];
+assign rt = IR[19:16];
+assign rd = IR[15:12];
+assign imm = IR[15:0];
+
+wire[3:0] statcode;
+wire rf_we;
+wire [1:0] alu_op;
+wire wb_sel;
+wire rd_sel;
+wire [3:0] write_reg;
+wire [31:0] write_data, read_data;
+wire [31:0] rsa, rsb;
+wire [31:0] alu_result, rs_data, rt_data, normal_data, final_result, rsort_data;
+wire [3:0] stat;
+wire stat_en;
+
+wire br_sel, pc_rst, pc_write, pc_sel, mm_sel, dm_we;
+wire [15:0] br_adder, pc_out, pc_inc, addr;
+wire data_sel, rs_en, rsort_sel;
+
+ctrl control(clk, rst_f, opcode, mm, statcode, rf_we, alu_op, wb_sel, rd_sel, br_sel, pc_rst, pc_write, pc_sel, mm_sel, dm_we, rs_en, rsort_sel, data_sel);
+
+im InstructionMem (pc_out , IR);
+pc ProgramCounter (br_adder, pc_sel, pc_write, pc_rst, pc_out, pc_inc);
+br Branch (pc_inc, imm, br_sel, br_adder);
+dm Datamem (addr, addr, rsb, dm_we, read_data);
+
+mux16 Datamux (alu_result[15:0], imm, mm_sel, addr);
+rf RF (rs, rt, write_reg, final_result, rf_we, rsa, rsb);
+mux4 muxOnleft (rd, rt, rd_sel, write_reg);
+alu math (rsa, rsb, imm, alu_op, alu_result, stat, stat_en);
+mux32 muxOnRight (read_data, alu_result, wb_sel, normal_data);
+statreg st (stat, stat_en, statcode);
+
+reg32 rtData(rsb, rs_en, rt_data);
+reg32 rsData(rsa, rs_en, rs_data);
+mux32 dataWriting(normal_data, rsort_data, data_sel, final_result);//
+mux32 rsort(rs_data, rt_data, rsort_sel, rsort_data);
+
+initial
+begin
+$monitor($time,,,"IR: %h, R0: %h, R1: %h, R2: %h,  R3: %h,  R4: %h,  R5: %h, R6: %h, R12 : %h R13 : %h R14 : %h, R15 : %h",
+IR, RF.ram_array[0], RF.ram_array[1], RF.ram_array[2], RF.ram_array[3],RF.ram_array[4],RF.ram_array[5],RF.ram_array[6],RF.ram_array[12],RF.ram_array[13],RF.ram_array[14],RF.ram_array[15]);
+end
+
 endmodule
